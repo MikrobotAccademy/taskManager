@@ -482,19 +482,4 @@ finishing it.
 
 ---
 
-# 🔑 Answer Key (Instructor Only — Do Not Commit!)
 
-| Issue | Fix |
-|-------|-----|
-| #1 | Change `title = title` → `self.title = title` in `Task.__init__` |
-| #2 | Add `@classmethod` decorator to `from_dict`; change `self` → `cls`; call `cls(...)` |
-| #3 | Change `priority == "medium"` → `priority = "medium"` |
-| #4 | Change `index >= len(self.tasks)` → `index > len(self.tasks)` |
-| #5 | Change comparison to `t.priority == priority.lower()` (or normalize both) |
-| #6 | Change to `keyword in task.title.lower() or keyword in task.description.lower()` |
-| #7 | Add `os.makedirs(os.path.dirname(self.DATA_FILE), exist_ok=True)` before `open()` |
-| #8 | Wrap `json.load()` in `try/except json.JSONDecodeError`, set `self.tasks = []` in except |
-| #9 | Change `if not t.completed` → `if t.completed` in the `completed` sum |
-| #10 | Validate date format with `datetime.strptime` in `add_task`; parse both dates in `overdue_tasks` |
-| #11 | Wrap the `input()` in `main()` with `try/except EOFError`; also fix `get_int_input()` |
-| #12 | Uncomment the `print("Invalid option...")` line in the `else` branch |
