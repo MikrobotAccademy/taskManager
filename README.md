@@ -1,4 +1,4 @@
-# 📋 TaskMaster Pro
+# 📋 TaskManager
 
 > **You've just been hired. Congratulations — and condolences.**
 >
@@ -12,7 +12,7 @@
 
 ## The Situation
 
-TaskMaster Pro is a command-line application that lets users manage a to-do list.
+TaskManager is a command-line application that lets users manage a to-do list.
 It *almost* works. Tasks can be created, listed, completed, deleted, searched,
 filtered, saved, and reported on.
 
@@ -28,7 +28,7 @@ it, and close the issue with a pull request.
 ## Project Structure
 
 ```
-taskmaster/
+taskManager/
 ├── task_manager.py        # Main application (← the crime scene)
 ├── tests/
 │   └── test_task_manager.py   # Test suite (some tests already fail)
@@ -44,8 +44,8 @@ taskmaster/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-instructor>/taskmaster-pro.git
-cd taskmaster-pro
+git clone https://github.com/MikrobotAccademy/taskmanager.git
+cd taskmanager
 ```
 
 ### 2. Create a virtual environment
