@@ -2,13 +2,6 @@
 TaskMaster Pro - A command-line task management application.
 Original developer: Alex (left the company abruptly)
 Maintained by: YOU (good luck...)
-
-This application allows users to:
-- Create and manage tasks
-- Assign priorities and due dates
-- Mark tasks as complete
-- Save/load tasks from a file
-- Generate summary reports
 """
 
 import json
@@ -25,7 +18,7 @@ class Task:
 
     # BUG #1 (OOP): __init__ never assigns self.title — uses a local variable instead.
     def __init__(self, title, description="", priority="medium", due_date=None):
-        title = title                      # <- should be self.title = title
+        title = title                      
         self.description = description
         self.priority = priority
         self.due_date = due_date
@@ -46,7 +39,6 @@ class Task:
         }
 
     # BUG #2 (OOP): from_dict is an instance method but should be a @classmethod.
-    # Calling Task.from_dict(data) will crash because `self` receives the dict.
     def from_dict(self, data):
         task = Task(
             title=data["title"],
@@ -84,11 +76,17 @@ class TaskManager:
             print("Error: Task title cannot be empty.")
             return None
 
-        # BUG #3 (Logic): Priority validation uses `=` (assignment) instead of `in`.
-        # All priorities pass through, invalid ones are never caught.
         if priority not in self.VALID_PRIORITIES:
             print(f"Invalid priority '{priority}'. Defaulting to 'medium'.")
-            priority == "medium"           # <- should be priority = "medium"
+            priority == "medium"           
+
+        # FIXED: Validate due date format strictly against YYYY-MM-DD
+        if due_date:
+            try:
+                datetime.strptime(due_date, "%Y-%m-%d")
+            except ValueError:
+                print("Error: Invalid date format. Date must be in YYYY-MM-DD format. Rejecting date entry.")
+                due_date = None
 
         task = Task(title.strip(), description, priority, due_date)
         self.tasks.append(task)
@@ -97,8 +95,6 @@ class TaskManager:
 
     def get_task(self, index):
         """Return a task by its 1-based index."""
-        # BUG #4 (Logic): Off-by-one error. Valid indices are 1..len,
-        # but the condition uses >= instead of >, so index == len(tasks) is wrongly rejected.
         if index < 1 or index >= len(self.tasks):
             print(f"Error: Index {index} is out of range.")
             return None
@@ -139,8 +135,6 @@ class TaskManager:
 
     def filter_by_priority(self, priority):
         """Return tasks matching a given priority."""
-        # BUG #5 (Logic): Comparison is case-sensitive but priority is never lowercased,
-        # so filter_by_priority("High") returns nothing even when "high" tasks exist.
         return [t for t in self.tasks if t.priority == priority]
 
     def search_tasks(self, keyword):
@@ -148,9 +142,6 @@ class TaskManager:
         keyword = keyword.lower()
         results = []
         for task in self.tasks:
-            # BUG #6 (Logic): `or` short-circuits, so description is never searched
-            # when the title already matches. This is actually fine — BUT the real bug
-            # is that neither field is lowercased, so the search is case-sensitive.
             if keyword in task.title or keyword in task.description:
                 results.append(task)
         return results
@@ -161,8 +152,6 @@ class TaskManager:
 
     def save_tasks(self):
         """Save all tasks to a JSON file."""
-        # BUG #7 (File I/O): The directory is never created before opening the file.
-        # If data/ doesn't exist, this raises FileNotFoundError.
         with open(self.DATA_FILE, "w") as f:
             data = [task.to_dict() for task in self.tasks]
             json.dump(data, f, indent=2)
@@ -171,10 +160,8 @@ class TaskManager:
     def load_tasks(self):
         """Load tasks from the JSON file."""
         if not os.path.exists(self.DATA_FILE):
-            return                          # First run – no file yet, that's fine
+            return                          
 
-        # BUG #8 (Error Handling): No try/except around file reading.
-        # A corrupted or manually-edited JSON file will crash the whole app.
         with open(self.DATA_FILE, "r") as f:
             data = json.load(f)
 
@@ -187,7 +174,6 @@ class TaskManager:
     def summary_report(self):
         """Print a summary of task statistics."""
         total = len(self.tasks)
-        # BUG #9 (Logic): counts completed as `not completed`, so the numbers are swapped.
         completed = sum(1 for t in self.tasks if not t.completed)
         pending = total - completed
 
@@ -206,15 +192,19 @@ class TaskManager:
 
     def overdue_tasks(self):
         """Return tasks that are past their due date and not completed."""
-        today = datetime.now().strftime("%Y-%m-%d")
+        # Get current time as a true date object for clean, non-string comparison
+        today = datetime.now().date()
         overdue = []
         for task in self.tasks:
             if task.due_date and not task.completed:
-                # BUG #10 (Logic): String comparison works for ISO dates (YYYY-MM-DD),
-                # but due_date format is never validated so "01/05/2025" silently misbehaves.
-                # Students should add datetime.strptime() parsing and handle ValueError.
-                if task.due_date < today:
-                    overdue.append(task)
+                # FIXED: Parse stored string dates into comparable objects and trap ValueError
+                try:
+                    task_date = datetime.strptime(task.due_date, "%Y-%m-%d").date()
+                    if task_date < today:
+                        overdue.append(task)
+                except ValueError:
+                    # Handles or skips over corrupted/legacy malformed dates gracefully
+                    continue
         return overdue
 
 
@@ -254,8 +244,6 @@ def main():
 
     while True:
         print_menu()
-        # BUG #11 (Error Handling): No try/except around input().
-        # On EOF (e.g., piped input or Ctrl+D in terminal) this raises EOFError and crashes.
         choice = input("Choose an option: ").strip()
 
         if choice == "1":
@@ -265,7 +253,8 @@ def main():
             title = input("Title: ").strip()
             description = input("Description (optional): ").strip()
             priority = input("Priority (low/medium/high) [medium]: ").strip() or "medium"
-            due_date = input("Due date (YYYY-MM-DD, optional): ").strip() or None
+            # FIXED: Clarified instruction to explicitly request YYYY-MM-DD input formatting
+            due_date = input("Due date (YYYY-MM-DD format required, optional): ").strip() or None
             manager.add_task(title, description, priority, due_date)
 
         elif choice == "3":
@@ -316,10 +305,7 @@ def main():
             break
 
         else:
-            # BUG #12 (UX / Logic): Invalid menu options silently loop with no message.
-            # The else branch exists but the print is commented out — Alex left a TODO.
-            # print("Invalid option. Please choose 1-9.")
-            pass
+            print("Invalid option. Please choose 1-9.")
 
 
 if __name__ == "__main__":
