@@ -247,6 +247,9 @@ def get_int_input(prompt):
     except ValueError:
         print("Please enter a valid number.")
         return None
+    except EOFError:
+        # FIXED: Handles EOF safely inside task completion/deletion indexing loops
+        return None
 
 
 def main():
@@ -254,19 +257,32 @@ def main():
 
     while True:
         print_menu()
-        # BUG #11 (Error Handling): No try/except around input().
-        # On EOF (e.g., piped input or Ctrl+D in terminal) this raises EOFError and crashes.
-        choice = input("Choose an option: ").strip()
+        
+        # FIXED: Core handler for EOFError at primary menu input
+        try:
+            choice = input("Choose an option: ").strip()
+        except EOFError:
+            print("\nEnd of input received. Saving tasks and exiting...")
+            manager.save_tasks()
+            print("Goodbye!")
+            break
 
         if choice == "1":
             manager.list_tasks()
 
         elif choice == "2":
-            title = input("Title: ").strip()
-            description = input("Description (optional): ").strip()
-            priority = input("Priority (low/medium/high) [medium]: ").strip() or "medium"
-            due_date = input("Due date (YYYY-MM-DD, optional): ").strip() or None
-            manager.add_task(title, description, priority, due_date)
+            # FIXED: Nested prompts safely intercept EOFError if piped input ends mid-operation
+            try:
+                title = input("Title: ").strip()
+                description = input("Description (optional): ").strip()
+                priority = input("Priority (low/medium/high) [medium]: ").strip() or "medium"
+                due_date = input("Due date (YYYY-MM-DD, optional): ").strip() or None
+                manager.add_task(title, description, priority, due_date)
+            except EOFError:
+                print("\nEnd of input received. Saving tasks and exiting...")
+                manager.save_tasks()
+                print("Goodbye!")
+                break
 
         elif choice == "3":
             manager.list_tasks()
@@ -281,22 +297,34 @@ def main():
                 manager.delete_task(idx)
 
         elif choice == "5":
-            keyword = input("Search keyword: ").strip()
-            results = manager.search_tasks(keyword)
-            if results:
-                for task in results:
-                    print(" ", task)
-            else:
-                print("No matching tasks found.")
+            try:
+                keyword = input("Search keyword: ").strip()
+                results = manager.search_tasks(keyword)
+                if results:
+                    for task in results:
+                        print(" ", task)
+                else:
+                    print("No matching tasks found.")
+            except EOFError:
+                print("\nEnd of input received. Saving tasks and exiting...")
+                manager.save_tasks()
+                print("Goodbye!")
+                break
 
         elif choice == "6":
-            priority = input("Priority to filter (low/medium/high): ").strip()
-            results = manager.filter_by_priority(priority)
-            if results:
-                for task in results:
-                    print(" ", task)
-            else:
-                print("No tasks with that priority.")
+            try:
+                priority = input("Priority to filter (low/medium/high): ").strip()
+                results = manager.filter_by_priority(priority)
+                if results:
+                    for task in results:
+                        print(" ", task)
+                else:
+                    print("No tasks with that priority.")
+            except EOFError:
+                print("\nEnd of input received. Saving tasks and exiting...")
+                manager.save_tasks()
+                print("Goodbye!")
+                break
 
         elif choice == "7":
             manager.summary_report()
@@ -316,10 +344,7 @@ def main():
             break
 
         else:
-            # BUG #12 (UX / Logic): Invalid menu options silently loop with no message.
-            # The else branch exists but the print is commented out — Alex left a TODO.
-            # print("Invalid option. Please choose 1-9.")
-            pass
+            print("Invalid option. Please choose 1-9.")
 
 
 if __name__ == "__main__":
